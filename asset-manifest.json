@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.js": "/tuner/static/js/main.fef30d2a.chunk.js",
+    "main.js.map": "/tuner/static/js/main.fef30d2a.chunk.js.map",
+    "runtime~main.js": "/tuner/static/js/runtime~main.693f2c8e.js",
+    "runtime~main.js.map": "/tuner/static/js/runtime~main.693f2c8e.js.map",
+    "static/js/2.094c5a31.chunk.js": "/tuner/static/js/2.094c5a31.chunk.js",
+    "static/js/2.094c5a31.chunk.js.map": "/tuner/static/js/2.094c5a31.chunk.js.map",
+    "index.html": "/tuner/index.html",
+    "precache-manifest.d6771668672fd5d55d3147e480a1d69d.js": "/tuner/precache-manifest.d6771668672fd5d55d3147e480a1d69d.js",
+    "service-worker.js": "/tuner/service-worker.js"
+  }
+}
