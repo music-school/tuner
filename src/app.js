@@ -1,95 +1,193 @@
-const noteStrings = [
-  "C",
-  "C#",
-  "D",
-  "D#",
-  "E",
-  "F",
-  "F#",
-  "G",
-  "G#",
-  "A",
-  "A#",
-  "B"
-];
-const noteDiv = document.getElementById("app");
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-const scriptProcessor = audioContext.createScriptProcessor(2048, 1, 1);
-let analyser = null;
-let mediaStreamSource = null;
-let pitchDetector = null;
+import React, { Component } from "react";
+import styled from "styled-components/macro";
 
-const getNote = frequency => {
-  const note = 12 * (Math.log(frequency / 440) / Math.log(2));
-  return Math.round(note) + 69;
-};
+import { Meter } from "./features/Meter";
+import { getNote, getNoteString, getOctave, getCents } from "./utils";
 
-const frequencyFromNoteNumber = note => 440 * Math.pow(2, (note - 69) / 12);
+const Wrapper = styled.div`
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+`;
 
-const getCents = (frequency, note) =>
-  Math.floor(
-    (1200 * Math.log(frequency / frequencyFromNoteNumber(note))) / Math.log(2)
-  );
+const Frequency = styled.div`
+  margin-top: 15px;
+  color: #fff;
+  font-size: 22px;
 
-const audioProcessCallback = event => {
-  const frequency = pitchDetector.do(event.inputBuffer.getChannelData(0));
-  if (frequency) {
-    console.log("frequency: ", frequency);
-    const note = getNote(frequency);
-    const cents = getCents(frequency, note);
-    noteDiv.innerHTML = noteStrings[note % 12];
+  & > span {
+    color: #93ccbf;
   }
+`;
+
+const NoteWrapper = styled.div`
+  margin-top: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  color: #fff;
+`;
+
+const Note = styled.div`
+  font-size: 96px;
+  line-height: 74px;
+`;
+
+const Octave = styled.div`
+  font-size: 46px;
+  line-height: 40px;
+`;
+
+const Button = styled.button`
+  display: flex;
+  justify-content: ${({ isActive }) => (isActive ? "flex-end" : "flex-start")};
+  align-items: center;
+  width: 100px;
+  height: 50px;
+  margin-top: 40px;
+  border: 0;
+  outline: none;
+  background-color: ${({ isActive }) => (isActive ? "#93ccbf" : "#fff")};
+  padding: 5px;
+  cursor: pointer;
+  border-radius: 4px;
+`;
+
+const ButtonContent = styled.div`
+  position: relative;
+  width: 40px;
+  height: 38px;
+  background: ${({ isActive }) => (isActive ? "#fff" : "#93ccbf")};
+  border-radius: 4px;
+`;
+
+const Aubio = window.Aubio;
+
+const initialState = {
+  note: "A",
+  octave: 4,
+  cents: 0,
+  frequency: 440,
+  isTunerActive: false
 };
 
-const initTuner = () => {
-  audioContext.resume().then(() => {
-    Aubio().then(aubio => {
-      pitchDetector = new aubio.Pitch(
-        "default",
-        2048,
-        1,
-        audioContext.sampleRate
-      );
+export class App extends Component {
+  state = initialState;
 
-      navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then(stream => {
-          mediaStreamSource = audioContext.createMediaStreamSource(stream);
-
-          analyser = audioContext.createAnalyser();
-          analyser.fftSize = 2048;
-          mediaStreamSource.connect(analyser);
-
-          analyser.connect(scriptProcessor);
-
-          scriptProcessor.connect(audioContext.destination);
-
-          scriptProcessor.addEventListener(
-            "audioprocess",
-            audioProcessCallback
-          );
-        })
-        .catch(err => {
-          console.log(err);
-        });
-    });
-  });
-};
-
-const stopTuner = () => {
-  if (
-    mediaStreamSource &&
-    mediaStreamSource.mediaStream &&
-    mediaStreamSource.mediaStream.stop
-  ) {
-    mediaStreamSource.mediaStream.stop();
-  }
-  scriptProcessor.removeEventListener("audioprocess", audioProcessCallback);
-  mediaStreamSource = null;
-  analyser = null;
   pitchDetector = null;
-  noteDiv.innerHTML = "--";
-};
 
-document.getElementById("start").addEventListener("click", initTuner);
-document.getElementById("stop").addEventListener("click", stopTuner);
+  mediaStreamSource = null;
+
+  scriptProcessor = null;
+
+  componentWillUnmount() {
+    this.handleStopTuner();
+  }
+
+  getAudioContext = () => new window.AudioContext();
+
+  startTuner = () => {
+    const audioContext = this.getAudioContext();
+
+    audioContext.resume().then(() => {
+      Aubio().then(aubio => {
+        this.pitchDetector = new aubio.Pitch(
+          "default",
+          2048,
+          1,
+          audioContext.sampleRate
+        );
+
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+          this.scriptProcessor = audioContext.createScriptProcessor(2048, 1, 1);
+
+          this.mediaStreamSource = audioContext.createMediaStreamSource(stream);
+
+          const analyser = audioContext.createAnalyser();
+          analyser.fftSize = 2048;
+          this.mediaStreamSource.connect(analyser);
+
+          analyser.connect(this.scriptProcessor);
+
+          this.scriptProcessor.connect(audioContext.destination);
+
+          this.scriptProcessor.addEventListener(
+            "audioprocess",
+            this.audioProcessCallback
+          );
+        });
+      });
+    });
+  };
+
+  audioProcessCallback = e => {
+    const frequency = this.pitchDetector.do(e.inputBuffer.getChannelData(0));
+
+    if (frequency) {
+      const note = getNote(frequency);
+      const cents = getCents(frequency, note);
+
+      this.setState({
+        note: getNoteString(note),
+        octave: getOctave(note),
+        frequency: frequency.toFixed(1),
+        cents
+      });
+    }
+  };
+
+  handleStartTuner = () => {
+    this.setState(
+      {
+        isTunerActive: true
+      },
+      () => {
+        this.startTuner();
+      }
+    );
+  };
+
+  handleStopTuner = () => {
+    this.setState(initialState, () => {
+      if (
+        this.mediaStreamSource &&
+        this.mediaStreamSource.mediaStream &&
+        this.mediaStreamSource.mediaStream.stop
+      ) {
+        this.mediaStreamSource.mediaStream.stop();
+      }
+
+      this.scriptProcessor.removeEventListener(
+        "audioprocess",
+        this.audioProcessCallback
+      );
+      this.mediaStreamSource = null;
+    });
+  };
+
+  render() {
+    const { note, octave, cents, frequency, isTunerActive } = this.state;
+
+    return (
+      <Wrapper>
+        <Meter cents={cents} />
+        <NoteWrapper>
+          <Note>{note}</Note>
+          <Octave>{octave}</Octave>
+        </NoteWrapper>
+        <Frequency>
+          <span>{frequency}</span> Hz
+        </Frequency>
+        <Button
+          isActive={isTunerActive}
+          onClick={isTunerActive ? this.handleStopTuner : this.handleStartTuner}
+        >
+          <ButtonContent isActive={isTunerActive} />
+        </Button>
+      </Wrapper>
+    );
+  }
+}
