@@ -1,68 +1,16 @@
 import React, { Component } from "react";
-import styled from "styled-components/macro";
 
 import { Meter } from "./features/Meter";
+import {
+  AppWrapper,
+  Frequency,
+  NoteWrapper,
+  Note,
+  Octave,
+  Button
+} from "./components";
+
 import { getNote, getNoteString, getOctave, getCents } from "./utils";
-
-const Wrapper = styled.div`
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-`;
-
-const Frequency = styled.div`
-  margin-top: 15px;
-  color: #fff;
-  font-size: 22px;
-
-  & > span {
-    color: #93ccbf;
-  }
-`;
-
-const NoteWrapper = styled.div`
-  margin-top: 50px;
-  display: flex;
-  justify-content: center;
-  align-items: baseline;
-  color: #fff;
-`;
-
-const Note = styled.div`
-  font-size: 96px;
-  line-height: 74px;
-`;
-
-const Octave = styled.div`
-  font-size: 46px;
-  line-height: 40px;
-`;
-
-const Button = styled.button`
-  display: flex;
-  justify-content: ${({ isActive }) => (isActive ? "flex-end" : "flex-start")};
-  align-items: center;
-  width: 100px;
-  height: 50px;
-  margin-top: 40px;
-  border: 0;
-  outline: none;
-  background-color: ${({ isActive }) => (isActive ? "#93ccbf" : "#fff")};
-  padding: 5px;
-  cursor: pointer;
-  border-radius: 4px;
-`;
-
-const ButtonContent = styled.div`
-  position: relative;
-  width: 40px;
-  height: 38px;
-  background: ${({ isActive }) => (isActive ? "#fff" : "#93ccbf")};
-  border-radius: 4px;
-`;
 
 const Aubio = window.Aubio;
 
@@ -83,16 +31,49 @@ export class App extends Component {
 
   scriptProcessor = null;
 
+  componentDidMount() {
+    this.initGetUserMedia();
+  }
+
   componentWillUnmount() {
     this.handleStopTuner();
   }
 
-  getAudioContext = () => new window.AudioContext();
+  getAudioContext = () => {
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+
+    if (!window.AudioContext) {
+      throw new Error("Web Audio API is not supported in this browser");
+    }
+
+    return new window.AudioContext();
+  };
+
+  initGetUserMedia = () => {
+    if (navigator.mediaDevices === undefined) {
+      navigator.mediaDevices = {};
+    }
+
+    if (navigator.mediaDevices.getUserMedia === undefined) {
+      navigator.mediaDevices.getUserMedia = function(constraints) {
+        const getUserMedia =
+          navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+
+        if (!getUserMedia) {
+          throw new Error("getUserMedia is not implemented in this browser");
+        }
+
+        return new Promise(function(resolve, reject) {
+          getUserMedia.call(navigator, constraints, resolve, reject);
+        });
+      };
+    }
+  };
 
   startTuner = () => {
-    const audioContext = this.getAudioContext();
+    try {
+      const audioContext = this.getAudioContext();
 
-    audioContext.resume().then(() => {
       Aubio().then(aubio => {
         this.pitchDetector = new aubio.Pitch(
           "default",
@@ -120,7 +101,9 @@ export class App extends Component {
           );
         });
       });
-    });
+    } catch (e) {
+      alert("Error: " + e.message);
+    }
   };
 
   audioProcessCallback = e => {
@@ -164,6 +147,7 @@ export class App extends Component {
         "audioprocess",
         this.audioProcessCallback
       );
+      this.Aubio = null;
       this.mediaStreamSource = null;
     });
   };
@@ -172,7 +156,7 @@ export class App extends Component {
     const { note, octave, cents, frequency, isTunerActive } = this.state;
 
     return (
-      <Wrapper>
+      <AppWrapper>
         <Meter cents={cents} />
         <NoteWrapper>
           <Note>{note}</Note>
@@ -184,10 +168,8 @@ export class App extends Component {
         <Button
           isActive={isTunerActive}
           onClick={isTunerActive ? this.handleStopTuner : this.handleStartTuner}
-        >
-          <ButtonContent isActive={isTunerActive} />
-        </Button>
-      </Wrapper>
+        />
+      </AppWrapper>
     );
   }
 }
