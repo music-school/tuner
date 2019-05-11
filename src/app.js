@@ -147,7 +147,6 @@ export class App extends Component {
         "audioprocess",
         this.audioProcessCallback
       );
-      this.Aubio = null;
       this.mediaStreamSource = null;
     });
   };
