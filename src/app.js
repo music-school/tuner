@@ -29,8 +29,6 @@ export class App extends Component {
 
   mediaStreamSource = null;
 
-  scriptProcessor = null;
-
   componentDidMount() {
     this.initGetUserMedia();
   }
@@ -83,7 +81,11 @@ export class App extends Component {
         );
 
         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-          this.scriptProcessor = audioContext.createScriptProcessor(2048, 1, 1);
+          const scriptProcessor = audioContext.createScriptProcessor(
+            2048,
+            1,
+            1
+          );
 
           this.mediaStreamSource = audioContext.createMediaStreamSource(stream);
 
@@ -91,11 +93,11 @@ export class App extends Component {
           analyser.fftSize = 2048;
           this.mediaStreamSource.connect(analyser);
 
-          analyser.connect(this.scriptProcessor);
+          analyser.connect(scriptProcessor);
 
-          this.scriptProcessor.connect(audioContext.destination);
+          scriptProcessor.connect(audioContext.destination);
 
-          this.scriptProcessor.addEventListener(
+          scriptProcessor.addEventListener(
             "audioprocess",
             this.audioProcessCallback
           );
@@ -147,7 +149,6 @@ export class App extends Component {
         "audioprocess",
         this.audioProcessCallback
       );
-      this.mediaStreamSource = null;
     });
   };
 
