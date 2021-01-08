@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 
 import { Meter } from "./features/Meter";
 import {
@@ -14,6 +14,16 @@ import { getNote, getNoteString, getOctave, getCents } from "./utils";
 
 const Aubio = window.Aubio;
 
+const getAudioContext = () => {
+  window.AudioContext = window.AudioContext || window.webkitAudioContext;
+
+  if (!window.AudioContext) {
+    throw new Error("Web Audio API is not supported in this browser");
+  }
+
+  return new window.AudioContext();
+};
+
 const initialState = {
   note: "A",
   octave: 4,
@@ -22,32 +32,21 @@ const initialState = {
   isTunerActive: false
 };
 
-export class App extends Component {
-  state = initialState;
+let scriptProcessor = null;
 
-  pitchDetector = null;
+let audioContext = null;
 
-  mediaStreamSource = null;
+let mediaStreamSource = null;
 
-  componentDidMount() {
-    this.initGetUserMedia();
-  }
+export const App = () => {
+  const [
+    { note, octave, cents, frequency, isTunerActive },
+    setState
+  ] = useState(initialState);
 
-  componentWillUnmount() {
-    this.handleStopTuner();
-  }
+  let pitchDetector = null;
 
-  getAudioContext = () => {
-    window.AudioContext = window.AudioContext || window.webkitAudioContext;
-
-    if (!window.AudioContext) {
-      throw new Error("Web Audio API is not supported in this browser");
-    }
-
-    return new window.AudioContext();
-  };
-
-  initGetUserMedia = () => {
+  const initGetUserMedia = () => {
     if (navigator.mediaDevices === undefined) {
       navigator.mediaDevices = {};
     }
@@ -68,12 +67,59 @@ export class App extends Component {
     }
   };
 
-  startTuner = () => {
+  const audioProcessCallback = e => {
+    const frequency = pitchDetector.do(e.inputBuffer.getChannelData(0));
+
+    if (frequency) {
+      const note = getNote(frequency);
+      const cents = getCents(frequency, note);
+
+      setState(prevState => ({
+        ...prevState,
+        note: getNoteString(note),
+        octave: getOctave(note),
+        frequency: frequency.toFixed(1),
+        cents
+      }));
+    }
+  };
+
+  const handleStopTuner = () => {
+    setState(initialState);
+
+    if (scriptProcessor) {
+      scriptProcessor.onaudioprocess = null;
+      scriptProcessor = null;
+    }
+
+    if (audioContext) {
+      audioContext = null;
+    }
+
+    if (
+      mediaStreamSource &&
+      mediaStreamSource.mediaStream &&
+      mediaStreamSource.mediaStream.stop
+    ) {
+      mediaStreamSource.mediaStream.stop();
+    }
+  };
+
+  useEffect(() => {
+    initGetUserMedia();
+
+    return () => {
+      handleStopTuner();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const startTuner = () => {
     try {
-      const audioContext = this.getAudioContext();
+      audioContext = getAudioContext();
 
       Aubio().then(aubio => {
-        this.pitchDetector = new aubio.Pitch(
+        pitchDetector = new aubio.Pitch(
           "default",
           2048,
           1,
@@ -81,26 +127,19 @@ export class App extends Component {
         );
 
         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-          const scriptProcessor = audioContext.createScriptProcessor(
-            2048,
-            1,
-            1
-          );
+          scriptProcessor = audioContext.createScriptProcessor(2048, 1, 1);
 
-          this.mediaStreamSource = audioContext.createMediaStreamSource(stream);
+          mediaStreamSource = audioContext.createMediaStreamSource(stream);
 
           const analyser = audioContext.createAnalyser();
           analyser.fftSize = 2048;
-          this.mediaStreamSource.connect(analyser);
+          mediaStreamSource.connect(analyser);
 
           analyser.connect(scriptProcessor);
 
           scriptProcessor.connect(audioContext.destination);
 
-          scriptProcessor.addEventListener(
-            "audioprocess",
-            this.audioProcessCallback
-          );
+          scriptProcessor.onaudioprocess = audioProcessCallback;
         });
       });
     } catch (e) {
@@ -108,68 +147,29 @@ export class App extends Component {
     }
   };
 
-  audioProcessCallback = e => {
-    const frequency = this.pitchDetector.do(e.inputBuffer.getChannelData(0));
+  const handleStartTuner = () => {
+    setState(prevState => ({
+      ...prevState,
+      isTunerActive: true
+    }));
 
-    if (frequency) {
-      const note = getNote(frequency);
-      const cents = getCents(frequency, note);
-
-      this.setState({
-        note: getNoteString(note),
-        octave: getOctave(note),
-        frequency: frequency.toFixed(1),
-        cents
-      });
-    }
+    startTuner();
   };
 
-  handleStartTuner = () => {
-    this.setState(
-      {
-        isTunerActive: true
-      },
-      () => {
-        this.startTuner();
-      }
-    );
-  };
-
-  handleStopTuner = () => {
-    this.setState(initialState, () => {
-      if (
-        this.mediaStreamSource &&
-        this.mediaStreamSource.mediaStream &&
-        this.mediaStreamSource.mediaStream.stop
-      ) {
-        this.mediaStreamSource.mediaStream.stop();
-      }
-
-      this.scriptProcessor.removeEventListener(
-        "audioprocess",
-        this.audioProcessCallback
-      );
-    });
-  };
-
-  render() {
-    const { note, octave, cents, frequency, isTunerActive } = this.state;
-
-    return (
-      <AppWrapper>
-        <Meter cents={cents} />
-        <NoteWrapper>
-          <Note>{note}</Note>
-          <Octave>{octave}</Octave>
-        </NoteWrapper>
-        <Frequency>
-          <span>{frequency}</span> Hz
-        </Frequency>
-        <Button
-          isActive={isTunerActive}
-          onClick={isTunerActive ? this.handleStopTuner : this.handleStartTuner}
-        />
-      </AppWrapper>
-    );
-  }
-}
+  return (
+    <AppWrapper>
+      <Meter cents={cents} />
+      <NoteWrapper>
+        <Note>{note}</Note>
+        <Octave>{octave}</Octave>
+      </NoteWrapper>
+      <Frequency>
+        <span>{frequency}</span> Hz
+      </Frequency>
+      <Button
+        isActive={isTunerActive}
+        onClick={isTunerActive ? handleStopTuner : handleStartTuner}
+      />
+    </AppWrapper>
+  );
+};
