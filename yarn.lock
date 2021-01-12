@@ -5390,10 +5390,10 @@ fragment-cache@^0.2.1:
   dependencies:
     map-cache "^0.2.2"
 
-frequency-recognizer@^1.0.16:
-  version "1.0.16"
-  resolved "https://registry.yarnpkg.com/frequency-recognizer/-/frequency-recognizer-1.0.16.tgz#91127f9c53cd9f0ae1ff52f516f9ed53f859579b"
-  integrity sha512-MRN1izaE2iaZEKinvDKNB/q5jKIM3jTYz+DkAf66aODBPPAiHN3mdqs5q95sSMReTw7zz9LF0G+QQi2S9+t+ug==
+frequency-recognizer@^1.0.17:
+  version "1.0.17"
+  resolved "https://registry.yarnpkg.com/frequency-recognizer/-/frequency-recognizer-1.0.17.tgz#4807ff66c6b4273c8f5416961db6d4c6495b2c09"
+  integrity sha512-ln2W1H0qmfNAfGvLMHa05gaV7ui7rHeO+ABEFrs4qpfeSkGLA3izbQtJc4arXM5At6PisMdiF/6fmmLmJx9vIA==
 
 fresh@0.5.2:
   version "0.5.2"
