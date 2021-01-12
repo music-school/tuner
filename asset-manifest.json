@@ -1,13 +1,17 @@
 {
   "files": {
-    "main.js": "/tuner/static/js/main.1a35d389.chunk.js",
-    "main.js.map": "/tuner/static/js/main.1a35d389.chunk.js.map",
-    "runtime~main.js": "/tuner/static/js/runtime~main.693f2c8e.js",
-    "runtime~main.js.map": "/tuner/static/js/runtime~main.693f2c8e.js.map",
-    "static/js/2.1b755c42.chunk.js": "/tuner/static/js/2.1b755c42.chunk.js",
-    "static/js/2.1b755c42.chunk.js.map": "/tuner/static/js/2.1b755c42.chunk.js.map",
+    "main.js": "/tuner/static/js/main.488e1ffe.chunk.js",
+    "main.js.map": "/tuner/static/js/main.488e1ffe.chunk.js.map",
+    "runtime-main.js": "/tuner/static/js/runtime-main.ed2dffeb.js",
+    "runtime-main.js.map": "/tuner/static/js/runtime-main.ed2dffeb.js.map",
+    "static/js/2.f9bf3400.chunk.js": "/tuner/static/js/2.f9bf3400.chunk.js",
+    "static/js/2.f9bf3400.chunk.js.map": "/tuner/static/js/2.f9bf3400.chunk.js.map",
     "index.html": "/tuner/index.html",
-    "precache-manifest.4b9db8cd799bcb0992a9d74b75fb23a0.js": "/tuner/precache-manifest.4b9db8cd799bcb0992a9d74b75fb23a0.js",
-    "service-worker.js": "/tuner/service-worker.js"
-  }
+    "static/js/2.f9bf3400.chunk.js.LICENSE.txt": "/tuner/static/js/2.f9bf3400.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.ed2dffeb.js",
+    "static/js/2.f9bf3400.chunk.js",
+    "static/js/main.488e1ffe.chunk.js"
+  ]
 }
