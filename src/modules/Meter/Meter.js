@@ -1,5 +1,5 @@
-import React from "react";
-import { Wrapper, Point, PointValue, Pointer, Dot } from "./components";
+import React from 'react';
+import { Wrapper, Point, PointValue, Pointer, Dot } from './components';
 
 const scalePoints = [
   { angle: -45, value: -50 },
@@ -12,7 +12,7 @@ const scalePoints = [
   { angle: 18 },
   { angle: 27, value: 30 },
   { angle: 36 },
-  { angle: 45, value: 50 }
+  { angle: 45, value: 50 },
 ];
 
 export const Meter = ({ cents, ...props }) => (
@@ -26,7 +26,7 @@ export const Meter = ({ cents, ...props }) => (
         isStrong={[
           0,
           Math.ceil((scalePoints.length - 1) / 2),
-          scalePoints.length - 1
+          scalePoints.length - 1,
         ].some(i => i === index)}
         isGreen={Math.abs(point.angle) === 9 || point.angle === 0}
       >
